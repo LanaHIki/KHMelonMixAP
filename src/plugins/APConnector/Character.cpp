@@ -1,6 +1,11 @@
 #include "State.h"
 #include "../../Platform.h"
 #include "missionDatabase.h"
+
+#define OVGROUPTAB 0x020B30B0
+#define SLOTONE 0x04
+#define SLOTTWO 0x08
+#define SLOTTHREE 0x0C
 namespace Plugins::APC {
 void Ctx::pollChar() {
         const u32 scene = r32(SCENEID);
@@ -33,7 +38,14 @@ void Ctx::pollChar() {
                 }
             }
         }
+        if (currentChar == int(XION)) {
+            u32 staty = r32(0x0204BE18);
+            u8 flags = r8(staty + 0x422);
+            flags = flags & 0xF7;
+            w8(staty + 0x422,flags);
+        }
 }
+
 void Ctx::assignMissionCharacter(u16 missionID, u8 character){
     for (HoloMissions& missiondb : missionDb){
         if(missiondb.missionID == missionID) missiondb.setChar = character;
