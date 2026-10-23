@@ -40,8 +40,11 @@ void Ctx::enemyScan() {
             u32 flags = r16(obj);
 
             if(obj && flags){
+            
+            u8 enemyClass = r8(obj + 0x19C);
+            bool isBarrel = enemyClass == 0x6B || enemyClass == 0x32;
             //checking if the actor is a combat actor
-            if(((flags & 0x60) == 0x60) && once){
+            if(((flags & 0x60) == 0x60) && once && !isBarrel){
                 for(u16 i = 0; i < 8; i++){
                     u16 offStat = r16(obj + offenseOffset + (6*i));
                     offStat = std::max<double>(5.0,std::floor( offStat * statScalePercent / 100));
@@ -53,6 +56,7 @@ void Ctx::enemyScan() {
                 u16 maxhp = r16(obj + 0x218);
                 maxhp = std::max<double>(5.0,std::floor( maxhp * hpScalePercent / 100));
                 w16(obj + 0x218, maxhp);
+                w16(obj + 0x21A,maxhp);
             }
         }
             currentNode = next;

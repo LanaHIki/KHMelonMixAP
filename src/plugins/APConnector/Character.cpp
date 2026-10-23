@@ -37,12 +37,14 @@ void Ctx::pollChar() {
                     if (missionRecordKind != int(ROXAS)) w8((MISSIONREC + MEMBERKIND), int(ROXAS));
                 }
             }
-        }
-        if (currentChar == int(XION)) {
-            u32 staty = r32(0x0204BE18);
-            u8 flags = r8(staty + 0x422);
-            flags = flags & 0xF7;
-            w8(staty + 0x422,flags);
+            
+            u32 isXion = r32(SESSIONTAB + 4);
+            if (isXion == int(XION)) {
+                u32 staty = r32(0x0204BE18);
+                u8 flags = r8(staty + 0x422);
+                flags = flags & 0xF7;
+                w8(staty + 0x422,flags);
+          }
         }
 }
 
