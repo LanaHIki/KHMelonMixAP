@@ -20,12 +20,17 @@ void Ctx::setOn(bool value) {
     }
 }
 void Ctx::loadRom() {
+    bannerActiveHud = 0;
+    obtainedBanners.clear();
     missionDone = 0;
 }
 void Ctx::loadSt() {
+    bannerWaitFrames = 8;
     missionDone = 0;
 }
 void Ctx::poll() {
+    if (nds)
+        pollObtainedBanner();
     if (on && nds) {
         run();
     }

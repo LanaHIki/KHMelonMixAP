@@ -1,6 +1,10 @@
 #pragma once
 #include "Addr.h"
 #include "tcpServer.h"
+#include <array>
+#include <deque>
+#include <string>
+#include <string_view>
 namespace melonDS { class NDS; }
 namespace Plugins::APC {
 class Ctx {
@@ -13,7 +17,19 @@ public:
     void loadSt();
     void commandHandling(u8 opcode, u8 size, u8* buffer);
     void poll();
+    bool showObtainedBanner(std::u16string_view text);
 private:
+    std::deque<std::u16string> obtainedBanners;
+    u32 bannerActiveHud = 0;
+    u32 bannerTextEntry = 0;
+    u32 bannerFieldRoot = 0;
+    unsigned bannerWaitFrames = 0;
+    unsigned bannerReadyFrames = 0;
+    bool bannerDisplayed = false;
+    std::array<u8, 64> bannerSavedText{};
+    std::array<u32, 13> bannerSavedCode{};
+    bool startObtainedBanner(std::u16string_view text);
+    void pollObtainedBanner();
     struct Chest {
         std::vector<u8> states;
     } chest{};
@@ -45,7 +61,6 @@ private:
         DWROXAS = 19
     }currentChar = ROXAS;
     daysTCP server{*this};
-    const u16 soraFlashbackIds[5] = {39, 47, 53, 56, 61};
     const u16 xionDenyTextEnglish[5] = {78, 111, 46, 46, 46};
     const u16 xionDenyTextFrench[6] = {78, 111,110, 46, 46, 46};
     const u16 xionDenyTextGerman[8] = {78, 101,105,110, 32, 46, 46, 46};
@@ -90,6 +105,7 @@ private:
     u8 get4(u32 gs, u32 mid);
     static void logmine(const char* fmt, ...);
     void pollRewardsBits();
+    void pollParallelSora();
     void pollChar();
     void pollGate();
     void pollMision();

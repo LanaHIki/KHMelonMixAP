@@ -40,3 +40,6 @@ roms/*
 !res/KINGDOM HEARTS HD 1.5+2.5 Launcher.exe
 
 AGENTS.md
+
+# Local frame-input and capture testing patch
+/local-testing-controls.patch

@@ -1,8 +1,10 @@
 #include "State.h"
 #include "itemDatabase.h"
+#include <string>
 namespace Plugins::APC {
 void Ctx::run() {
     pollActiveFieldGoal();
+    pollParallelSora();
     pollChar();
     pollGameStart();
     pollGate();
@@ -36,6 +38,13 @@ void Ctx::commandHandling(u8 opcode, u8 size, u8 *buffer) {
         case 0x10: getInventory(); break;
         case 0x20: setCharacterMission(size,buffer); break;
         case 0x21: setCharacterRando(size,buffer); break;
+        case 0x22: {
+            std::u16string text;
+            for (u32 offset = 0; offset + 1 < size; offset += 2)
+                text.push_back(buffer[offset + 2] | (buffer[offset + 3] << 8));
+            showObtainedBanner(text);
+            break;
+        }
 
     }
 }
