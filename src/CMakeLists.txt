@@ -85,6 +85,7 @@ add_library(core STATIC
     plugins/APConnector/Character.cpp
     plugins/APConnector/Item.cpp
     plugins/APConnector/ObtainedBanner.cpp
+    plugins/APConnector/Arm9Patch.cpp
     plugins/APConnector/Mission.cpp
     plugins/APConnector/MissionRewards.cpp
     plugins/APConnector/Goal.cpp

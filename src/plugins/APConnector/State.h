@@ -4,9 +4,11 @@
 #include <array>
 #include <deque>
 #include <string>
-#include <string_view>
 namespace melonDS { class NDS; }
 namespace Plugins::APC {
+enum class InstructionSet { Arm, Thumb };
+u32 encodeArm9FunctionCall(u32 callAddress, u32 targetAddress, InstructionSet targetInstructionSet);
+
 class Ctx {
 public:
     Ctx();
@@ -17,19 +19,16 @@ public:
     void loadSt();
     void commandHandling(u8 opcode, u8 size, u8* buffer);
     void poll();
-    bool showObtainedBanner(std::u16string_view text);
 private:
-    std::deque<std::u16string> obtainedBanners;
-    u32 bannerActiveHud = 0;
-    u32 bannerTextEntry = 0;
-    u32 bannerFieldRoot = 0;
-    unsigned bannerWaitFrames = 0;
-    unsigned bannerReadyFrames = 0;
-    bool bannerDisplayed = false;
-    std::array<u8, 64> bannerSavedText{};
-    std::array<u32, 13> bannerSavedCode{};
-    bool startObtainedBanner(std::u16string_view text);
+    std::string messageBytes;
+    std::deque<u16> bannerItems;
+    std::array<u32, 32> bannerCode{};
+    u8 bannerPatchAliveTimeFrames = 0;
     void pollObtainedBanner();
+    void installObtainedBannerArm9Patch(u32 keyTable, u32 hudSlot, u32 extraKey, u16 item);
+    bool bannerPatchRestoralCheck();
+    bool fieldHudReady(u32 hud, u32 panel) const;
+    bool originalBannerHudTickLoaded() const;
     struct Chest {
         std::vector<u8> states;
     } chest{};
@@ -61,6 +60,7 @@ private:
         DWROXAS = 19
     }currentChar = ROXAS;
     daysTCP server{*this};
+    const u16 soraFlashbackIds[5] = {39, 47, 53, 56, 61};
     const u16 xionDenyTextEnglish[5] = {78, 111, 46, 46, 46};
     const u16 xionDenyTextFrench[6] = {78, 111,110, 46, 46, 46};
     const u16 xionDenyTextGerman[8] = {78, 101,105,110, 32, 46, 46, 46};
@@ -70,7 +70,7 @@ private:
     melonDS::NDS* nds = nullptr;
     u32 magicKeys[15] = {0x05D, 0x05E, 0x05F, 0x60, 0x61, 0x62, 0x63, 0x64, 0x065, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B};
     bool ws = false;
-    bool on = false;
+    bool apConnectorEnabled = false;
     u32 missionDone = 0;
     bool finalMissionUnlocked = false;
     void enemyScan();
@@ -102,10 +102,11 @@ private:
     bool w8(u32 addr, u8 val);
     bool w16(u32 addr, u16 val);
     bool w32(u32 addr, u32 val);
+    void installArm9Patch(u32 patchAddress, const u32* replacementWords, u32* savedOriginalWords, u32 wordCount);
+    void restoreArm9Patch(u32 patchAddress, const u32* savedOriginalWords, u32 wordCount);
     u8 get4(u32 gs, u32 mid);
     static void logmine(const char* fmt, ...);
     void pollRewardsBits();
-    void pollParallelSora();
     void pollChar();
     void pollGate();
     void pollMision();

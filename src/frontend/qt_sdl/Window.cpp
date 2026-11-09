@@ -447,6 +447,15 @@ MainWindow::MainWindow(int id, EmuInstance* inst, QWidget* parent) :
             actLuaScript = menu->addAction("Lua Script");
             connect(actLuaScript,&QAction::triggered,this,&MainWindow::onOpenLuaScript);
 
+            if (emuInstance->instanceID == 0 && id == 0) {
+                MiniAPWindow* miniAPWindow = new MiniAPWindow(this);
+                QAction* showMiniAPAction = menu->addAction("Mini AP Client");
+                connect(showMiniAPAction, &QAction::triggered, miniAPWindow, [miniAPWindow] {
+                    miniAPWindow->show();
+                    miniAPWindow->raise();
+                });
+            }
+
             menu->addSeparator();
 
             actEnableCheats = menu->addAction("Enable cheats");

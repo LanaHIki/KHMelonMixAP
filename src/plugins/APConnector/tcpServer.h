@@ -8,6 +8,9 @@ namespace Plugins::APC { class Ctx; }
 class daysTCP {
     public:
 explicit daysTCP(Plugins::APC::Ctx& ctx) : ctx(ctx) {}
+~daysTCP();
+daysTCP(const daysTCP&) = delete;
+daysTCP& operator=(const daysTCP&) = delete;
 void acceptConnection();
 void pollTCP();
 void readTcp();
@@ -20,6 +23,8 @@ void startSocket();
 bool startWSA();
 private:
     Plugins::APC::Ctx& ctx;
+    std::vector<uint8_t> receivedBytes;
+    bool networkStarted = false;
 
     SOCKET serverSocket = INVALID_SOCKET;
     SOCKET acceptSocket = INVALID_SOCKET;

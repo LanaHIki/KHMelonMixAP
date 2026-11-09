@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <fstream>
+#include <cstdlib>
 #include <inttypes.h>
 #include "NDS.h"
 #include "ARM.h"
@@ -75,6 +77,54 @@ const s32 kIterationCycleMargin = 8;
 // timings for GBA slot and wifi are set up at runtime
 
 thread_local NDS* NDS::Current = nullptr;
+struct TestFrameState {
+    u32 Sequence = 0;
+    u32 ButtonMask = 0xFFF;
+    u32 FramesRemaining = 0;
+    u32 CapturedSequence = 0;
+};
+
+TestFrameState testFrameState;
+
+void pollTestFrameInput(u32& mask) {
+    const char* inputPath = std::getenv("KHDAYSTESTINPUT");
+    const char* capturePath = std::getenv("KHDAYSTESTCAPTURE");
+    if (inputPath != nullptr && capturePath != nullptr) {
+        std::ifstream input(inputPath, std::ios::binary);
+        u32 command[3] = {};
+        if (input.read(reinterpret_cast<char*>(command), sizeof(command))) {
+            if (command[0] != testFrameState.Sequence) {
+                testFrameState.Sequence = command[0];
+                testFrameState.ButtonMask = command[1];
+                testFrameState.FramesRemaining = command[2];
+            }
+        }
+        if (testFrameState.FramesRemaining > 0) {
+            mask = testFrameState.ButtonMask;
+        } else {
+            mask = 0xFFF;
+        }
+    }
+}
+
+void captureTestFrame(NDS& nds) {
+    const char* capturePath = std::getenv("KHDAYSTESTCAPTURE");
+    if (capturePath != nullptr && testFrameState.Sequence != testFrameState.CapturedSequence) {
+        if (testFrameState.FramesRemaining > 0) {
+            testFrameState.FramesRemaining--;
+        }
+        if (testFrameState.FramesRemaining == 0) {
+            std::ofstream capture(capturePath, std::ios::binary | std::ios::trunc);
+            u32 header[4] = { testFrameState.Sequence, nds.NumFrames, nds.KeyInput, nds.PowerControl9 };
+            capture.write(reinterpret_cast<const char*>(header), sizeof(header));
+            for (u32 screen = 0; screen < 2; screen++) {
+                capture.write(reinterpret_cast<const char*>(nds.GPU.Framebuffer[nds.GPU.FrontBuffer][screen].get()), 256 * 192 * sizeof(u32));
+            }
+            capture.write(reinterpret_cast<const char*>(nds.MainRAM), nds.MainRAMMask + 1);
+            testFrameState.CapturedSequence = testFrameState.Sequence;
+        }
+    }
+}
 
 NDS::NDS() noexcept :
     NDS(
@@ -1064,6 +1114,7 @@ u32 NDS::RunFrame()
     NumFrames++;
     if (LagFrameFlag)
         NumLagFrames++;
+    captureTestFrame(*this);
 
     if (Running)
         return GPU.TotalScanlines;
@@ -1202,6 +1253,7 @@ void NDS::CheckKeyIRQ(u32 cpu, u32 oldkey, u32 newkey)
 
 void NDS::SetKeyMask(u32 mask)
 {
+    pollTestFrameInput(mask);
     u32 key_lo = mask & 0x3FF;
     u32 key_hi = (mask >> 10) & 0x3;
 

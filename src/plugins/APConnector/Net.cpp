@@ -14,24 +14,23 @@ Ctx::~Ctx() {
 #endif
 }
 void Ctx::setOn(bool value) {
-    on = value;
-    if (on) {
+    apConnectorEnabled = value;
+    if (apConnectorEnabled) {
         server.startTcpServer();
     }
 }
 void Ctx::loadRom() {
-    bannerActiveHud = 0;
-    obtainedBanners.clear();
+    bannerPatchAliveTimeFrames = 0;
+    bannerItems.clear();
     missionDone = 0;
 }
 void Ctx::loadSt() {
-    bannerWaitFrames = 8;
+    if (bannerPatchAliveTimeFrames) bannerPatchAliveTimeFrames = 1;
     missionDone = 0;
 }
 void Ctx::poll() {
-    if (nds)
-        pollObtainedBanner();
-    if (on && nds) {
+    if (nds) pollObtainedBanner();
+    if (apConnectorEnabled && nds) {
         run();
     }
 }

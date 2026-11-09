@@ -4,10 +4,16 @@
 #include <vector>
 #include "State.h"
 
-static std::vector<uint8_t> rx;
+daysTCP::~daysTCP() {
+    if (acceptSocket != INVALID_SOCKET) closesocket(acceptSocket);
+    if (serverSocket != INVALID_SOCKET) closesocket(serverSocket);
+    if (networkStarted) WSACleanup();
+}
 
 bool daysTCP::startWSA() {
-    return (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
+    if (!networkStarted)
+        networkStarted = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
+    return networkStarted;
 }
 
 void daysTCP::startSocket()
@@ -33,7 +39,6 @@ void daysTCP::bindSocket() {
 
         if (bind(serverSocket, (SOCKADDR*)&address, sizeof(address)) == SOCKET_ERROR) {
             closesocket(serverSocket);
-            WSACleanup();
             serverSocket = INVALID_SOCKET;
         }
     }
@@ -63,7 +68,7 @@ void daysTCP::closeCli()
 {
     closesocket(acceptSocket);
     acceptSocket = INVALID_SOCKET;
-    rx.clear();
+    receivedBytes.clear();
 }
 
 void daysTCP::readTcp()
@@ -73,16 +78,16 @@ void daysTCP::readTcp()
         int length = recv(acceptSocket, reinterpret_cast<char*>(buffer), sizeof(buffer), 0);
 
         if (length > 0) {
-            rx.insert(rx.end(), buffer, buffer + length);
+            receivedBytes.insert(receivedBytes.end(), buffer, buffer + length);
 
-            while (rx.size() >= 2) {
-                uint8_t opcode = rx[0];
-                uint8_t size = rx[1];
+            while (receivedBytes.size() >= 2) {
+                uint8_t opcode = receivedBytes[0];
+                uint8_t size = receivedBytes[1];
                 size_t total = size + 2;
 
-                if (rx.size() >= total) {
-                    ctx.commandHandling(opcode, size, rx.data());
-                    rx.erase(rx.begin(), rx.begin() + total);
+                if (receivedBytes.size() >= total) {
+                    ctx.commandHandling(opcode, size, receivedBytes.data());
+                    receivedBytes.erase(receivedBytes.begin(), receivedBytes.begin() + total);
                 }
                 else {
                     break;

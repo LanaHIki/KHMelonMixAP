@@ -32,6 +32,8 @@
 #include <QMutex>
 #include <QScreen>
 #include <QCloseEvent>
+#include "APWindow.h"
+#include <QAction>
 
 #include "Screen.h"
 #include "Config.h"

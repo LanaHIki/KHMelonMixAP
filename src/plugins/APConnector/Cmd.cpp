@@ -1,10 +1,9 @@
 #include "State.h"
+#include "APMessages.h"
 #include "itemDatabase.h"
-#include <string>
 namespace Plugins::APC {
 void Ctx::run() {
     pollActiveFieldGoal();
-    pollParallelSora();
     pollChar();
     pollGameStart();
     pollGate();
@@ -23,6 +22,16 @@ void Ctx::run() {
 void Ctx::commandHandling(u8 opcode, u8 size, u8 *buffer) {
     logmine("opcode %02X",opcode);
     switch(opcode) {
+        case 0x23: {
+            if (size > 0) {
+                u8 flags = buffer[2];
+                if (flags & 1) messageBytes.clear();
+                messageBytes.append(reinterpret_cast<const char*>(buffer + 3), size - 1);
+                if (messageBytes.size() > 65536) messageBytes.clear();
+                if (flags & 2) queueAPMessage(std::move(messageBytes));
+            }
+            break;
+        }
         case 0x01: {
             if (size == 2) {
                 u16 item = buffer[2] | (buffer[3] << 8);
@@ -38,13 +47,6 @@ void Ctx::commandHandling(u8 opcode, u8 size, u8 *buffer) {
         case 0x10: getInventory(); break;
         case 0x20: setCharacterMission(size,buffer); break;
         case 0x21: setCharacterRando(size,buffer); break;
-        case 0x22: {
-            std::u16string text;
-            for (u32 offset = 0; offset + 1 < size; offset += 2)
-                text.push_back(buffer[offset + 2] | (buffer[offset + 3] << 8));
-            showObtainedBanner(text);
-            break;
-        }
 
     }
 }
@@ -101,20 +103,18 @@ void Ctx::setMultipleMissionLocked(u8 amount, u8 *buffer) {
 }
 
 
-void Ctx::giveItemType(u16 item){
-        bool magic = false;
-        for (u8 i = 0; i < 15; i++) {
-            magic |= magicKeys[i] == item;
-        }
-        if ((item != 1) && !magic) {
-            itemGive(item);
+void Ctx::giveItemType(u16 item) {
+    u32 gameState = r32(GAMESTATE);
+    u8 previousCount = gameState ? r8(gameState + ITEMCOUNT + item) : 0;
+    bool magic = false;
+    for (u16 magicKey : magicKeys)
+        magic |= magicKey == item;
 
-        } 
-        if( item == 1) {
-            RowRelease(1);
-        }
-        if(magic) {
-            giveMagic(item, 3);
-        }
+    if (item == 1) RowRelease(1);
+    else if (magic) giveMagic(item, 3);
+    else itemGive(item);
+
+    if (gameState && (r32(BANNERGAMECODE) == 0x50474B59) && (r8(gameState + ITEMCOUNT + item) != previousCount))
+        bannerItems.push_back(item);
 }
 }
