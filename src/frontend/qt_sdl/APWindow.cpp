@@ -20,29 +20,54 @@ MiniAPWindow::MiniAPWindow(QWidget* parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setMinimumSize(280, 160);
     resize(460, 300);
+
     QFont messageFont("Segoe UI");
     messageFont.setPixelSize(14);
     setFont(messageFont);
+
     lockButton = new QToolButton(this);
     lockButton->setText("Lock");
     lockButton->setCheckable(true);
     lockButton->setFixedWidth(80);
-    lockButton->setStyleSheet("QToolButton { color: #cbd5e1; background: rgba(20,28,40,170); border: 1px solid rgba(180,205,230,45); border-radius: 4px; padding: 4px 12px; } QToolButton:hover { background: rgba(50,68,88,200); }");
-    connect(lockButton, &QToolButton::toggled, this, &MiniAPWindow::changeLock);
-    resizeHandle = new QSizeGrip(this);
+    lockButton->setStyleSheet(
+        "QToolButton { "
+            "color: #cbd5e1; "
+            "background: rgba(20,28,40,170); "
+            "border: 1px solid rgba(180,205,230,45); "
+            "border-radius: 4px; "
+            "padding: 4px 12px; "
+        "} "
+        "QToolButton:hover { "
+            "background: rgba(50,68,88,200); "
+        "}"
+    );
+
     QHBoxLayout* toolbar = new QHBoxLayout;
     toolbar->addStretch();
     toolbar->addWidget(lockButton);
+
+    resizeHandle = new QSizeGrip(this);
+
     QVBoxLayout* windowLayout = new QVBoxLayout(this);
     windowLayout->setContentsMargins(12, 8, 12, 8);
     windowLayout->addLayout(toolbar);
     windowLayout->addStretch();
     windowLayout->addWidget(resizeHandle, 0, Qt::AlignRight);
+
+    connect(
+        lockButton, &QToolButton::toggled,
+        this, &MiniAPWindow::changeLock
+    );
+
     QTimer* messageTimer = new QTimer(this);
+
     connect(messageTimer, &QTimer::timeout, this, [this] {
         for (const std::string& message : Plugins::APC::takeAPMessages())
-            receiveMessage(QByteArray(message.data(), message.size()));
+            receiveMessage(
+                QByteArray(message.data(), message.size())
+            );
     });
+
     messageTimer->start(30);
 }
 
